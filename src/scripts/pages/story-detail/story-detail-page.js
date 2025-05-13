@@ -9,10 +9,13 @@ import StoryDetailPresenter from './story-detail-presenter';
 import { parseActivePathname } from '../../routes/url-parser';
 import Map from '../../utils/map';
 import * as StoryAPI from '../../data/api';
+import IdbSource from '../../data/idb-source';
 
 export default class StoryDetailPage {
-  #presenter = null;
-  #map = null;
+  constructor() {
+    this.presenter = null;
+    this.map = null;
+  }
 
   async render() {
     return `
@@ -36,12 +39,12 @@ export default class StoryDetailPage {
       return;
     }
 
-    this.#presenter = new StoryDetailPresenter(storyId, {
+    this.presenter = new StoryDetailPresenter(storyId, {
       view: this,
       apiModel: StoryAPI,
     });
 
-    this.#presenter.showStoryDetail();
+    this.presenter.showStoryDetail();
   }
 
   async populateStoryDetailAndInitialMap(message, story) {
@@ -69,15 +72,15 @@ export default class StoryDetailPage {
 
       await this.initialMap();
 
-      if (this.#map) {
+      if (this.map) {
         const storyCoordinate = [lat, lon];
 
         if ((lat !== 0 || lon !== 0) && !isNaN(Number(lat)) && !isNaN(Number(lon))) {
           const markerOptions = { alt: `${story.name}'s story location` };
           const popupOptions = { content: `${story.name}'s story was shared from here` };
 
-          this.#map.changeCamera(storyCoordinate, 15);
-          this.#map.addMarker(storyCoordinate, markerOptions, popupOptions);
+          this.map.changeCamera(storyCoordinate, 15);
+          this.map.addMarker(storyCoordinate, markerOptions, popupOptions);
         } else {
           console.warn('Story has invalid coordinates:', { lat, lon }, 'using default map view');
         }
@@ -85,8 +88,49 @@ export default class StoryDetailPage {
         console.error('Map not initialized');
       }
 
-      this.#presenter.showSaveButton();
+      this.presenter.showSaveButton();
       this.addShareEventListener();
+
+      // Tambahkan tombol untuk menyimpan cerita offline
+      const saveOfflineBtn = document.createElement('button');
+      saveOfflineBtn.id = 'save-offline-button';
+      saveOfflineBtn.className = 'btn btn-outline';
+      saveOfflineBtn.innerHTML = '<i class="fas fa-download"></i> Simpan Offline';
+
+      // Cek apakah cerita sudah disimpan offline
+      const storyId = this.presenter.getStoryId();
+      const savedStory = await IdbSource.getStoryById(storyId);
+
+      if (savedStory) {
+        saveOfflineBtn.disabled = true;
+        saveOfflineBtn.innerHTML = '<i class="fas fa-check"></i> Tersimpan Offline';
+      }
+
+      saveOfflineBtn.addEventListener('click', async () => {
+        try {
+          // Simpan cerita ke IndexedDB
+          await IdbSource.saveStory({
+            id: storyId,
+            name: story.name,
+            description: story.description,
+            photoUrl: story.photoUrl,
+            createdAt: story.createdAt,
+            location: story.location,
+          });
+
+          saveOfflineBtn.disabled = true;
+          saveOfflineBtn.innerHTML = '<i class="fas fa-check"></i> Tersimpan Offline';
+
+          alert('Cerita berhasil disimpan untuk dibaca offline!');
+        } catch (error) {
+          console.error('Gagal menyimpan cerita offline:', error);
+          alert('Gagal menyimpan cerita. Silakan coba lagi.');
+        }
+      });
+
+      // Tambahkan tombol ke dalam container
+      const actionsContainer = document.querySelector('.story-detail__actions');
+      actionsContainer.appendChild(saveOfflineBtn);
     } catch (error) {
       console.error('Error populating story detail:', error);
       this.populateStoryDetailError('Error displaying story details. Please try again.');
@@ -107,11 +151,11 @@ export default class StoryDetailPage {
 
       mapElement.style.backgroundColor = '#f0f0f0';
 
-      this.#map = await Map.build('#map', {
+      this.map = await Map.build('#map', {
         zoom: 15,
       });
 
-      if (!this.#map) {
+      if (!this.map) {
         console.error('Failed to create map instance');
         mapElement.innerHTML = `
           <div class="map-error">
@@ -143,7 +187,7 @@ export default class StoryDetailPage {
 
       document.getElementById('story-detail-save')?.addEventListener('click', async () => {
         const storyId = parseActivePathname().id;
-        const response = await this.#presenter.toggleBookmark({
+        const response = await this.presenter.toggleBookmark({
           id: storyId,
           name: document.querySelector('.story-detail-title').textContent,
           description: document.querySelector('.story-detail__description').textContent,
@@ -173,7 +217,7 @@ export default class StoryDetailPage {
       saveContainer.innerHTML = generateRemoveStoryButtonTemplate();
 
       document.getElementById('story-detail-remove')?.addEventListener('click', async () => {
-        const response = await this.#presenter.toggleBookmark();
+        const response = await this.presenter.toggleBookmark();
         if (!response) {
           alert('Story removed from bookmarks!');
         }

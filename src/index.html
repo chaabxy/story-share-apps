@@ -1,22 +1,25 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="id">
   <head>
-    <meta http-equiv="Content-Type" content="text/html;charset=UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="StoryShare - Aplikasi untuk berbagi cerita dan pengalaman dengan lokasi">
+    <meta name="theme-color" content="#007bff">
+    
     <title>StoryShare App</title>
-
-    <link rel="shortcut icon" href="favicon.png" />
-    <link rel="apple-touch-icon" href="favicon.png" />
-
+    
+    <link rel="shortcut icon" href="favicon.png">
+    <link rel="apple-touch-icon" href="favicon.png">
+    <link rel="manifest" href="manifest.json">
+    
     <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap"
-    />
-
+    >
+    
     <!-- Font Awesome 5.15.4 -->
     <link
       rel="stylesheet"
@@ -24,31 +27,32 @@
       integrity="sha512-1ycn6IcaQQ40/MKBW2W4Rhis/DbILU74C1vSrLJxCq57o941Ym01SwNsOMqvEBFlcgUa6xLiPY/NS5R+E6ztJQ=="
       crossorigin="anonymous"
       referrerpolicy="no-referrer"
-    />
+    >
   </head>
   <body>
-    <a href="#main-content" id="skip-link" class="skip-link">Skip to main content</a>
-  
+    <a href="#main-content" id="skip-link" class="skip-link">Lewati ke konten utama</a>
+    
+    <!-- Application Shell -->
     <header>
       <div class="header-content container">
         <div class="brand-name">
           <span class="brand-name__text">StoryShare</span>
         </div>
-
+        
         <nav id="navigation-drawer" class="navigation-drawer">
           <ul id="navlist-main" class="navigation-drawer__navlist-main"></ul>
           <ul id="navlist" class="navigation-drawer__navlist"></ul>
         </nav>
-
-        <button id="drawer-button" class="drawer-button" aria-label="Toggle navigation menu">☰</button>
+        
+        <button id="drawer-button" class="drawer-button" aria-label="Buka menu navigasi">☰</button>
       </div>
     </header>
-
+    
     <main tabIndex="-1" id="main-content" class="main-content"></main>
-
+    
     <footer>
       <div class="container">
-        <hr />
+        <hr>
         <div class="footer-content">
           <div class="brand-name">
             <span class="brand-name__text">StoryShare</span>
@@ -57,5 +61,20 @@
         </div>
       </div>
     </footer>
+
+    <!-- Register Service Worker -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/service-worker.js')
+            .then(registration => {
+              console.log('Service Worker berhasil didaftarkan', registration);
+            })
+            .catch(error => {
+              console.error('Gagal mendaftarkan Service Worker', error);
+            });
+        });
+      }
+    </script>
   </body>
 </html>

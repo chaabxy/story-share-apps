@@ -12,6 +12,7 @@ export default class App {
   #content;
   #drawerButton;
   #drawerNavigation;
+  currentUrl;
 
   constructor({ content, drawerNavigation, drawerButton }) {
     this.#content = content;
@@ -106,15 +107,33 @@ export default class App {
 
   async renderPage() {
     const url = getActiveRoute();
-    const route = routes[url];
+    const prevUrl = this.currentUrl || '/';
+    this.currentUrl = url;
 
+    // Cek apakah rute ada
+    const route = routes[url] || routes['404'];
     const page = route();
+
+    // Tentukan jenis transisi berdasarkan navigasi
+    let transitionType = 'default';
+
+    // Deteksi apakah navigasi maju atau mundur
+    if (url === '/' && prevUrl !== '/') {
+      transitionType = 'backward';
+    } else if (url.includes('/stories/') && !prevUrl.includes('/stories/')) {
+      transitionType = 'detail';
+    } else if (prevUrl.includes('/stories/') && !url.includes('/stories/')) {
+      transitionType = 'exit-detail';
+    } else if (url !== prevUrl) {
+      transitionType = 'forward';
+    }
 
     const transition = transitionHelper({
       updateDOM: async () => {
         this.#content.innerHTML = await page.render();
         page.afterRender();
       },
+      transitionType: transitionType,
     });
 
     transition.ready.catch(console.error);

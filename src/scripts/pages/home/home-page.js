@@ -1,3 +1,5 @@
+// Tambahkan import NotificationHelper
+import NotificationHelper from '../../utils/notification-helper';
 import {
   generateLoaderAbsoluteTemplate,
   generateStoryItemTemplate,
@@ -9,11 +11,13 @@ import Map from '../../utils/map';
 import * as StoryAPI from '../../data/api';
 
 export default class HomePage {
-  #presenter = null;
-  #map = null;
+  constructor() {
+    this.presenter = null;
+    this.map = null;
+  }
 
   async render() {
-    const greeting = this.#getGreeting();
+    const greeting = this.getGreeting();
 
     return `
       <section class="home-welcome-section">
@@ -51,12 +55,12 @@ export default class HomePage {
   }
 
   async afterRender() {
-    this.#presenter = new HomePresenter({
+    this.presenter = new HomePresenter({
       view: this,
       model: StoryAPI,
     });
 
-    await this.#presenter.initialGalleryAndMap();
+    await this.presenter.initialGalleryAndMap();
 
     document.getElementById('map-section').style.display = 'none';
 
@@ -80,9 +84,40 @@ export default class HomePage {
         }
       });
     }
+
+    // Tambahkan tombol untuk berlangganan notifikasi
+    const notificationBtn = document.createElement('button');
+    notificationBtn.className = 'btn btn-outline notification-btn';
+    notificationBtn.innerHTML = '<i class="fas fa-bell"></i> Aktifkan Notifikasi';
+    notificationBtn.addEventListener('click', async () => {
+      try {
+        const permissionGranted = await NotificationHelper.requestPermission();
+        if (!permissionGranted) {
+          alert('Mohon izinkan notifikasi untuk mendapatkan pembaruan terbaru');
+          return;
+        }
+
+        const registration = await NotificationHelper.registerServiceWorker();
+        if (!registration) {
+          alert('Service Worker gagal didaftarkan');
+          return;
+        }
+
+        const subscription = await NotificationHelper.subscribeNotification(registration);
+        if (subscription) {
+          alert('Notifikasi berhasil diaktifkan! Anda akan menerima pembaruan terbaru.');
+          notificationBtn.disabled = true;
+          notificationBtn.innerHTML = '<i class="fas fa-bell"></i> Notifikasi Aktif';
+        }
+      } catch (error) {
+        console.error('Gagal mengaktifkan notifikasi:', error);
+        alert('Gagal mengaktifkan notifikasi. Silakan coba lagi nanti.');
+      }
+    });
+    storiesSection.appendChild(notificationBtn);
   }
 
-  #getGreeting() {
+  getGreeting() {
     const hour = new Date().getHours();
     if (hour >= 5 && hour < 12) {
       return 'Good Morning!';
@@ -132,12 +167,12 @@ export default class HomePage {
 
   async initialMap() {
     try {
-      this.#map = await Map.build('#map', {
+      this.map = await Map.build('#map', {
         zoom: 10,
         locate: true,
       });
 
-      if (this.#map) {
+      if (this.map) {
         const response = await StoryAPI.getAllStories();
         if (response.ok && response.listStory && response.listStory.length > 0) {
           for (const story of response.listStory) {
@@ -158,7 +193,7 @@ export default class HomePage {
                   </div>
                 `;
 
-                this.#map.addMarker(
+                this.map.addMarker(
                   [lat, lon],
                   { alt: `${story.name}'s story location` },
                   { content: popupContent },

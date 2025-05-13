@@ -131,4 +131,8 @@ export default class StoryDetailPresenter {
       return true;
     }
   }
+
+  getStoryId() {
+    return this.#storyId;
+  }
 }
